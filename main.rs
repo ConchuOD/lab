@@ -14,26 +14,27 @@ fn get_board_from_config(board: String, input_file: String, serial: &mut String,
 
 	let config: Value = serde_yaml::from_str(&contents)?;
 
-	let board_config = config["boards"][board].clone();
-	if board_config == serde_yaml::Value::Null {
-		return Err(Box::new(std::fmt::Error))
-	}
+	let board_config = config
+		.get("boards")
+		.ok_or_else(|| return std::fmt::Error)?
+		.get(board)
+		.ok_or_else(|| return std::fmt::Error)?;
 
 	*serial = board_config
 		.get("serial")
-		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.ok_or_else(|| return std::fmt::Error)?
 		.as_str()
-		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.ok_or_else(|| return std::fmt::Error)?
 		.to_owned();
 
 	*port = board_config
-		.get("serial")
-		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.get("port")
+		.ok_or_else(|| return std::fmt::Error)?
 		.as_str()
-		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.ok_or_else(|| return std::fmt::Error)?
 		.to_owned();
-	
-	return Ok(())
+
+	return Ok(());
 }
 
 /// lab
@@ -68,7 +69,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 
 	let output = Command::new("sh")
 		.arg("-c")
-		.arg("sudo ykushcmd ykush -l ")
+		.arg("ykushcmd ykush -l ")
 		.output()
 		.expect("failed to execute process");
 
