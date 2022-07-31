@@ -108,5 +108,15 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	
 	println!("{} attached to {}@{}", board, serial, port);
 
+	let output = Command::new("sh")
+		.arg("-c")
+		.arg(&format!("ykushcmd ykush -s {} -d {}", serial, port))
+		.output()
+		.expect("failed to execute process");
+
+	if output.status.success() {
+		println!("{} attached to {}@{} shut down.", board, serial, port);
+	}
+
 	return Ok(())
 }
