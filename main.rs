@@ -6,6 +6,31 @@
 use clap::Parser;
 use serde_yaml::Value;
 use std::{fs,process::Command};
+use std::fmt;
+
+#[derive(Debug)]
+struct ConfigParsingError {
+	details: String
+}
+
+impl ConfigParsingError {
+	fn new(msg: &str) -> ConfigParsingError {
+		ConfigParsingError{details: msg.to_string()}
+	}
+}
+
+impl fmt::Display for ConfigParsingError {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Invalid Yaml Config: {}", self.details)
+	}
+}
+
+impl std::error::Error for ConfigParsingError {
+	fn description(&self) -> &str {
+		&self.details
+	}
+}
+
 
 fn get_board_from_config(board: String, input_file: String, serial: &mut String, port: &mut String)
 -> Result<(), Box<dyn std::error::Error>>
@@ -16,22 +41,22 @@ fn get_board_from_config(board: String, input_file: String, serial: &mut String,
 
 	let board_config = config
 		.get("boards")
-		.ok_or_else(|| return std::fmt::Error)?
+		.ok_or_else(|| return ConfigParsingError::new("No boards found"))?
 		.get(board)
-		.ok_or_else(|| return std::fmt::Error)?;
+		.ok_or_else(|| return ConfigParsingError::new("Requested board not found"))?;
 
 	*serial = board_config
 		.get("serial")
-		.ok_or_else(|| return std::fmt::Error)?
+		.ok_or_else(|| return ConfigParsingError::new("No serial number found"))?
 		.as_str()
-		.ok_or_else(|| return std::fmt::Error)?
+		.ok_or_else(|| return ConfigParsingError::new("Serial number was not a string"))?
 		.to_owned();
 
 	*port = board_config
 		.get("port")
-		.ok_or_else(|| return std::fmt::Error)?
+		.ok_or_else(|| return ConfigParsingError::new("No port number found"))?
 		.as_str()
-		.ok_or_else(|| return std::fmt::Error)?
+		.ok_or_else(|| return ConfigParsingError::new("Port number was not a string"))?
 		.to_owned();
 
 	return Ok(());
