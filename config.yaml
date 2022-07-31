@@ -1,0 +1,8 @@
+---
+boards:
+  icicle:
+    serial: "abcd"
+    port: "1"
+  vision5:
+    serial: "YK24012"
+    port: "1"
