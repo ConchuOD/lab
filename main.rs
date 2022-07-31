@@ -5,7 +5,7 @@
 
 use clap::Parser;
 use serde_yaml::Value;
-use std::{fs,process};
+use std::{fs,process::Command};
 
 fn get_board_from_config(board: String, input_file: String, serial: &mut String, port: &mut String)
 -> Result<(), Box<dyn std::error::Error>>
@@ -55,7 +55,16 @@ struct Args {
 	/// board to operate on
 	#[clap(short, long, default_value = "icicle")]
 	board: String,
+	
+	/// shut down all boards
+	#[clap(long)]
+	goodnight: bool,
+
+	/// boot or reboot a specific board
+	#[clap(short, long)]
+	reboot: bool,
 }
+
 fn main() -> Result<(),Box<dyn std::error::Error>> {
 	let args = Args::parse();
 	let input_file = args.config;
@@ -65,6 +74,21 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	
 	get_board_from_config(board.clone(), input_file, &mut serial, &mut port)?;
 
+	let output = Command::new("sh")
+		.arg("-c")
+		.arg("sudo ykushcmd ykush -l ")
+		.output()
+		.expect("failed to execute process");
+
+	let stdout = match String::from_utf8(output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+	if !stdout.clone().contains(&serial) {
+		return Err(Box::new(std::fmt::Error))
+	}
+	
 	println!("{} attached to {}@{}", board, serial, port);
+
 	return Ok(())
 }
