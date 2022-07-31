@@ -19,27 +19,19 @@ fn get_board_from_config(board: String, input_file: String, serial: &mut String,
 		return Err(Box::new(std::fmt::Error))
 	}
 
-	let serial_temp = board_config.get("serial");
-	if serial_temp.is_none() {
-		return Err(Box::new(std::fmt::Error))
-	}
+	*serial = board_config
+		.get("serial")
+		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.as_str()
+		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.to_owned();
 
-	if let Some(x) = serial_temp.unwrap().as_str() {
-		*serial = x.to_owned();
-	} else {
-		return Err(Box::new(std::fmt::Error))
-	}
-
-	let port_temp = board_config.get("port");
-	if port_temp.is_none() {
-		return Err(Box::new(std::fmt::Error))
-	}
-
-	if let Some(x) = port_temp.unwrap().as_str() {
-		*port = x.to_owned();
-	} else {
-		return Err(Box::new(std::fmt::Error))
-	}
+	*port = board_config
+		.get("serial")
+		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.as_str()
+		.ok_or_else(|| return Box::new(std::fmt::Error))?
+		.to_owned();
 	
 	return Ok(())
 }
