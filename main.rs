@@ -49,29 +49,30 @@ impl std::error::Error for ConfigParsingError {
 }
 
 #[derive(Debug)]
-struct YkushcmdError {
+struct YkmdError {
 	details: String
 }
 
-impl YkushcmdError {
-	fn new(msg: &str) -> YkushcmdError {
-		return YkushcmdError{details: msg.to_string()}
+impl YkmdError {
+	fn new(msg: &str) -> YkmdError {
+		return YkmdError{details: msg.to_string()}
 	}
 }
 
-impl fmt::Display for YkushcmdError {
+impl fmt::Display for YkmdError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		return write!(f, "ykushcmd failed: {}", self.details)
 	}
 }
 
-impl std::error::Error for YkushcmdError {
+impl std::error::Error for YkmdError {
 	fn description(&self) -> &str {
 		return &self.details
 	}
 }
 
-fn get_board_from_config(board: String, input_file: String, serial: &mut String, port: &mut String)
+fn get_board_from_config(board: String, input_file: String, serial: &mut String,
+			 port: &mut String, power_source: &mut String)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	let contents = fs::read_to_string(input_file)?;
@@ -98,6 +99,13 @@ fn get_board_from_config(board: String, input_file: String, serial: &mut String,
 		.ok_or_else(|| return ConfigParsingError::new("Port number was not a string"))?
 		.to_owned();
 
+	*power_source = board_config
+		.get("type")
+		.ok_or_else(|| return ConfigParsingError::new("No type found"))?
+		.as_str()
+		.ok_or_else(|| return ConfigParsingError::new("Type was not a string"))?
+		.to_owned();
+
 	return Ok(());
 }
 
@@ -116,32 +124,22 @@ fn power(board: String, serial: String, port: String, direction: String)
 		.expect("failed to execute process");
 
 	if !output.status.success() {
-		return Err(Box::new(YkushcmdError::new("failed to power direction")));
+		return Err(Box::new(YkmdError::new("failed to power direction")));
 	}
 
 	println!("{} attached to {}@{} powered {}.", board, serial, port, direction);
 	return Ok(())
 }
 
-fn power_down(board: String, serial: String, port: String)
--> Result<(), Box<dyn std::error::Error>>
+fn reboot_board(board: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
-	power(board, serial, port, "down".to_string())?;
+	let mut serial: String = String::new();
+	let mut port: String = String::new();
+	let mut power_source: String = String::new();
 
-	return Ok(())
-}
+	get_board_from_config(board.clone(), input_file.clone(), &mut serial, &mut port,
+			      &mut power_source)?;
 
-fn power_up(board: String, serial: String, port: String)
--> Result<(), Box<dyn std::error::Error>>
-{
-	power(board, serial, port, "up".to_string())?;
-
-	return Ok(())
-}
-
-fn reboot_board(board: String, serial: String, port: String)
--> Result<(), Box<dyn std::error::Error>>
-{
 	let output = Command::new("sh")
 		.arg("-c")
 		.arg("ykushcmd ykush -l ")
@@ -153,14 +151,44 @@ fn reboot_board(board: String, serial: String, port: String)
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
 	if !stdout.contains(&serial) {
-		return Err(Box::new(YkushcmdError::new(&format!(
+		return Err(Box::new(YkmdError::new(&format!(
 			"board with serial {} not found", serial))))
 	}
 	
 	println!("{} attached to {}@{}", board, serial, port);
-	power_down(board.clone(), serial.clone(), port.clone())?;
+	power(board.clone(), serial.clone(), port.clone(), "down".to_string())?;
 	thread::sleep(time::Duration::from_millis(1000));
-	power_up(board, serial, port)?;
+	power(board, serial, port, "up".to_string())?;
+
+	return Ok(())
+}
+
+fn turn_off_board(board: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+{
+	let mut serial: String = String::new();
+	let mut port: String = String::new();
+	let mut power_source: String = String::new();
+
+	get_board_from_config(board.clone(), input_file.clone(), &mut serial, &mut port,
+			      &mut power_source)?;
+
+	let output = Command::new("sh")
+		.arg("-c")
+		.arg("ykushcmd ykush -l ")
+		.output()
+		.expect("failed to execute process");
+
+	let stdout = match String::from_utf8(output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+	if !stdout.contains(&serial) {
+		return Err(Box::new(YkmdError::new(&format!(
+			"board with serial {} not found", serial))))
+	}
+	
+	println!("{} attached to {}@{}", board, serial, port);
+	power(board.clone(), serial.clone(), port.clone(), "down".to_string())?;
 
 	return Ok(())
 }
@@ -169,14 +197,10 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	let args = Args::parse();
 	let input_file = args.config;
 	let board = args.board;
-	let mut serial: String = String::new();
-	let mut port: String = String::new();
-	
-	get_board_from_config(board.clone(), input_file, &mut serial, &mut port)?;
 
 	match args.function.as_str() {
-		"off" => return power_down(board, serial, port),
-		"on" | "reboot" => return reboot_board(board, serial, port),
-		_ => return Err(Box::new(YkushcmdError::new("Invalid function"))),
+		"off" => return turn_off_board(board, input_file),
+		"on" | "reboot" => return reboot_board(board, input_file),
+		_ => return Err(Box::new(YkmdError::new("Invalid function"))),
 	}
 }
