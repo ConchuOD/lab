@@ -109,7 +109,7 @@ fn power(board: String, serial: String, port: String, direction: String)
 		.arg(
 			&format!("ykushcmd ykush -s {} -{} {}",
 				serial,
-				direction.chars().nth(0).unwrap(),
+				direction.chars().next().unwrap(),
 				port)
 		)
 		.output()
@@ -152,7 +152,7 @@ fn reboot_board(board: String, serial: String, port: String)
 		Ok(v) => v,
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
-	if !stdout.clone().contains(&serial) {
+	if !stdout.contains(&serial) {
 		return Err(Box::new(YkushcmdError::new(&format!(
 			"board with serial {} not found", serial))))
 	}
@@ -160,7 +160,7 @@ fn reboot_board(board: String, serial: String, port: String)
 	println!("{} attached to {}@{}", board, serial, port);
 	power_down(board.clone(), serial.clone(), port.clone())?;
 	thread::sleep(time::Duration::from_millis(1000));
-	power_up(board.clone(), serial.clone(), port.clone())?;
+	power_up(board, serial, port)?;
 
 	return Ok(())
 }
