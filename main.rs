@@ -109,13 +109,14 @@ fn get_board_from_config(board: String, input_file: String, serial: &mut String,
 	return Ok(());
 }
 
-fn power(board: String, serial: String, port: String, direction: String)
+fn power(board: String, serial: String, port: String, direction: String, command: String)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	let output = Command::new("sh")
 		.arg("-c")
 		.arg(
-			&format!("ykushcmd ykush -s {} -{} {}",
+			&format!("{} -s {} -{} {}",
+				command,
 				serial,
 				direction.chars().next().unwrap(),
 				port)
@@ -131,18 +132,33 @@ fn power(board: String, serial: String, port: String, direction: String)
 	return Ok(())
 }
 
+fn format_command(yk_board_type: String, command: &mut String)
+-> Result<(), Box<dyn std::error::Error>>
+{
+	match yk_board_type.as_str() {
+		"usb" => *command = "ykushcmd ykush".to_string(),
+		"relay" => *command = "ykurcmd".to_string(),
+		_ => return Err(Box::new(YkmdError::new("Unsupported yk board type"))),
+	}
+
+	return Ok(())
+}
+
 fn reboot_board(board: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
+	let mut power_source: String = String::new();
+	let mut command: String = String::new();
 	let mut serial: String = String::new();
 	let mut port: String = String::new();
-	let mut power_source: String = String::new();
 
-	get_board_from_config(board.clone(), input_file.clone(), &mut serial, &mut port,
+	get_board_from_config(board.clone(), input_file, &mut serial, &mut port,
 			      &mut power_source)?;
+
+	format_command(power_source, &mut command)?;
 
 	let output = Command::new("sh")
 		.arg("-c")
-		.arg("ykushcmd ykush -l ")
+		.arg(format!("{} -l ", command))
 		.output()
 		.expect("failed to execute process");
 
@@ -156,25 +172,28 @@ fn reboot_board(board: String, input_file: String) -> Result<(), Box<dyn std::er
 	}
 	
 	println!("{} attached to {}@{}", board, serial, port);
-	power(board.clone(), serial.clone(), port.clone(), "down".to_string())?;
+	power(board.clone(), serial.clone(), port.clone(), "down".to_string(), command.clone())?;
 	thread::sleep(time::Duration::from_millis(1000));
-	power(board, serial, port, "up".to_string())?;
+	power(board, serial, port, "up".to_string(), command)?;
 
 	return Ok(())
 }
 
 fn turn_off_board(board: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
+	let mut power_source: String = String::new();
+	let mut command: String = String::new();
 	let mut serial: String = String::new();
 	let mut port: String = String::new();
-	let mut power_source: String = String::new();
 
-	get_board_from_config(board.clone(), input_file.clone(), &mut serial, &mut port,
+	get_board_from_config(board.clone(), input_file, &mut serial, &mut port,
 			      &mut power_source)?;
+
+	format_command(power_source, &mut command)?;
 
 	let output = Command::new("sh")
 		.arg("-c")
-		.arg("ykushcmd ykush -l ")
+		.arg(format!("{} -l ", command))
 		.output()
 		.expect("failed to execute process");
 
@@ -188,7 +207,7 @@ fn turn_off_board(board: String, input_file: String) -> Result<(), Box<dyn std::
 	}
 	
 	println!("{} attached to {}@{}", board, serial, port);
-	power(board.clone(), serial.clone(), port.clone(), "down".to_string())?;
+	power(board, serial.clone(), port.clone(), "down".to_string(), command)?;
 
 	return Ok(())
 }

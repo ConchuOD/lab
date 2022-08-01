@@ -3,7 +3,7 @@ boards:
   icicle:
     type: relay
     serial: "YK21614"
-    port: "1"
+    port: "5"
   vision5:
     type: usb
     serial: "YK24012"
