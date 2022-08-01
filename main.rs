@@ -32,19 +32,19 @@ struct ConfigParsingError {
 
 impl ConfigParsingError {
 	fn new(msg: &str) -> ConfigParsingError {
-		ConfigParsingError{details: msg.to_string()}
+		return ConfigParsingError{details: msg.to_string()}
 	}
 }
 
 impl fmt::Display for ConfigParsingError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "Invalid Yaml Config: {}", self.details)
+		return write!(f, "Invalid Yaml Config: {}", self.details)
 	}
 }
 
 impl std::error::Error for ConfigParsingError {
 	fn description(&self) -> &str {
-		&self.details
+		return &self.details
 	}
 }
 
@@ -55,19 +55,19 @@ struct YkushcmdError {
 
 impl YkushcmdError {
 	fn new(msg: &str) -> YkushcmdError {
-		YkushcmdError{details: msg.to_string()}
+		return YkushcmdError{details: msg.to_string()}
 	}
 }
 
 impl fmt::Display for YkushcmdError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "ykushcmd failed: {}", self.details)
+		return write!(f, "ykushcmd failed: {}", self.details)
 	}
 }
 
 impl std::error::Error for YkushcmdError {
 	fn description(&self) -> &str {
-		&self.details
+		return &self.details
 	}
 }
 
@@ -175,8 +175,8 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	get_board_from_config(board.clone(), input_file, &mut serial, &mut port)?;
 
 	match args.function.as_str() {
-		"off" => power_down(board, serial, port),
-		"on" | "reboot" => reboot_board(board, serial, port),
-		_ => Err(Box::new(YkushcmdError::new("Invalid function"))),
+		"off" => return power_down(board, serial, port),
+		"on" | "reboot" => return reboot_board(board, serial, port),
+		_ => return Err(Box::new(YkushcmdError::new("Invalid function"))),
 	}
 }
