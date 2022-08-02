@@ -212,6 +212,29 @@ fn turn_off_board(board: String, input_file: String) -> Result<(), Box<dyn std::
 	return Ok(())
 }
 
+fn goodnight(input_file: String) -> Result<(), Box<dyn std::error::Error>>
+{
+	let contents = fs::read_to_string(input_file.clone())?;
+
+	let config: Value = serde_yaml::from_str(&contents)?;
+
+	let board_configs = config
+		.get("boards")
+		.ok_or_else(|| return ConfigParsingError::new("No boards found"))?
+		.as_mapping();
+	
+	if board_configs.is_none() {
+		return Err(Box::new(YkmdError::new("No boards found")))
+	}
+	for board in board_configs.unwrap().iter() {
+		let board_name = board.0.as_str().unwrap();
+		println!("Trying to power down {}", board_name);
+		let _ = turn_off_board(String::from(board_name), input_file.clone());
+	}
+	
+	return Ok(())
+}
+
 fn main() -> Result<(),Box<dyn std::error::Error>> {
 	let args = Args::parse();
 	let input_file = args.config;
@@ -220,6 +243,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	match args.function.as_str() {
 		"off" => return turn_off_board(board, input_file),
 		"on" | "reboot" => return reboot_board(board, input_file),
+		"goodnight" => return goodnight(input_file),
 		_ => return Err(Box::new(YkmdError::new("Invalid function"))),
 	}
 }
