@@ -4,6 +4,10 @@ boards:
     type: relay
     serial: "YK21614"
     port: "5"
+    uart:
+      pattern: "usb-Silicon_Labs_CP2108_Quad_USB_to_UART_Bridge_Controller_4E8DF76ACA27C09811EA547FE4D974D"
+      primary: "if01-port0"
+      bootloader: "if00-port0"
   vision5:
     type: usb
     serial: "YK24012"
