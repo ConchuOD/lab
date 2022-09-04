@@ -81,7 +81,7 @@ fn populate_board(mut board: &mut Board, board_config: Value)
 pub fn get_all_boards_from_config(input_file: String)
 -> Result<Vec<Board>,Box<dyn std::error::Error>>
 {
-	let mut boards: Vec<Board> = Vec::new();
+	let boards: Vec<Board> = Vec::new();
 	let contents = fs::read_to_string(input_file)?;
 
 	let config: Value = serde_yaml::from_str(&contents)?;
