@@ -36,7 +36,8 @@ pub struct Board {
 	pub name: String,
 	pub yk_serial_number: String,
 	pub yk_port_number: String,
-	pub power_source: String
+	pub power_source: String,
+	pub powered: bool,
 }
 
 impl Default for Board {
@@ -46,7 +47,8 @@ impl Default for Board {
 			name: "n/a".to_string(),
 			yk_serial_number: "n/a".to_string(),
 			yk_port_number: "n/a".to_string(),
-			power_source: "n/a".to_string()
+			power_source: "n/a".to_string(),
+			powered: false
 		}
 	}
 }
