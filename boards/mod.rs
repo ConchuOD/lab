@@ -51,28 +51,9 @@ impl Default for Board {
 	}
 }
 
-pub fn get_all_boards_from_config(input_file: String)
--> Result<Vec<Board>,Box<dyn std::error::Error>>
+fn populate_board(mut board: &mut Board, board_config: Value)
+-> Result<(),Box<dyn std::error::Error>>
 {
-	return Ok(Vec::new());
-}
-
-pub fn get_board_from_config(board_name: String, input_file: String)
--> Result<Board, Box<dyn std::error::Error>>
-{
-	let contents = fs::read_to_string(input_file)?;
-
-	let config: Value = serde_yaml::from_str(&contents)?;
-
-	let board_config = config
-		.get("boards")
-		.ok_or_else(|| return ConfigParsingError::new("No boards found"))?
-		.get(board_name.clone())
-		.ok_or_else(|| return ConfigParsingError::new("Requested board not found"))?;
-
-	let mut board = Board::default();
-	board.name = board_name.clone();
-
 	board.yk_serial_number = board_config
 		.get("serial")
 		.ok_or_else(|| return ConfigParsingError::new("No serial number found"))?
@@ -94,5 +75,55 @@ pub fn get_board_from_config(board_name: String, input_file: String)
 		.ok_or_else(|| return ConfigParsingError::new("Type was not a string"))?
 		.to_owned();
 
+	return Ok(());
+}
+
+pub fn get_all_boards_from_config(input_file: String)
+-> Result<Vec<Board>,Box<dyn std::error::Error>>
+{
+	let mut boards: Vec<Board> = Vec::new();
+	let contents = fs::read_to_string(input_file)?;
+
+	let config: Value = serde_yaml::from_str(&contents)?;
+
+	let board_configs = config
+		.get("boards")
+		.ok_or_else(|| return ConfigParsingError::new("No boards found"))?
+		.as_mapping();
+	
+	let board_configs_iter = board_configs
+		.unwrap()
+		.iter();
+
+	for board_config in board_configs_iter {
+		let mut board = Board::default();
+		board.name = board_config.0
+			.as_str()
+			.ok_or_else(|| return ConfigParsingError::new("name was not a string"))?
+			.to_string();
+		populate_board(&mut board, board_config.1.to_owned())?;
+	}
+
+	return Ok(boards.clone());
+}
+
+pub fn get_board_from_config(board_name: String, input_file: String)
+-> Result<Board, Box<dyn std::error::Error>>
+{
+	let contents = fs::read_to_string(input_file)?;
+
+	let config: Value = serde_yaml::from_str(&contents)?;
+
+	let board_config = config
+		.get("boards")
+		.ok_or_else(|| return ConfigParsingError::new("No boards found"))?
+		.get(board_name.clone())
+		.ok_or_else(|| return ConfigParsingError::new("Requested board not found"))?;
+
+	let mut board = Board::default();
+	board.name = board_name.clone();
+	populate_board(&mut board, board_config.to_owned())?;
+
 	return Ok(board.clone());
 }
+
