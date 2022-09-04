@@ -66,17 +66,12 @@ fn format_command(yk_board_type: String, command: &mut String)
 	return Ok(())
 }
 
-pub fn reboot_board(board: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+pub fn reboot_board(board_name: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
-	let mut power_source: String = String::new();
 	let mut command: String = String::new();
-	let mut serial: String = String::new();
-	let mut port: String = String::new();
+	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
 
-	boards::get_board_from_config(board.clone(), input_file, &mut serial, &mut port,
-			      &mut power_source)?;
-
-	format_command(power_source, &mut command)?;
+	format_command(board.power_source, &mut command)?;
 
 	let output = Command::new("sh")
 		.arg("-c")
@@ -88,30 +83,28 @@ pub fn reboot_board(board: String, input_file: String) -> Result<(), Box<dyn std
 		Ok(v) => v,
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
-	if !stdout.contains(&serial) {
+	if !stdout.contains(&board.yk_serial_number) {
 		return Err(Box::new(YkmdError::new(&format!(
-			"board with serial {} not found", serial))))
+			"board with serial {} not found", board.yk_serial_number))))
 	}
 	
-	println!("{} attached to {}@{}", board, serial, port);
-	power(board.clone(), serial.clone(), port.clone(), "down".to_string(), command.clone())?;
+	println!("{} attached to {}@{}", board.name, board.yk_serial_number, board.yk_port_number);
+
+	power(board_name.clone(), board.yk_serial_number.clone(), board.yk_port_number.clone(),
+	      "down".to_string(), command.clone())?;
 	thread::sleep(time::Duration::from_millis(1000));
-	power(board, serial, port, "up".to_string(), command)?;
+	power(board_name, board.yk_serial_number, board.yk_port_number, "up".to_string(), command)?;
 
 	return Ok(())
 }
 
-pub fn turn_off_board(board: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+pub fn turn_off_board(board_name: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
-	let mut power_source: String = String::new();
 	let mut command: String = String::new();
-	let mut serial: String = String::new();
-	let mut port: String = String::new();
 
-	boards::get_board_from_config(board.clone(), input_file, &mut serial, &mut port,
-				      &mut power_source)?;
+	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
 
-	format_command(power_source, &mut command)?;
+	format_command(board.power_source, &mut command)?;
 
 	let output = Command::new("sh")
 		.arg("-c")
@@ -123,13 +116,14 @@ pub fn turn_off_board(board: String, input_file: String) -> Result<(), Box<dyn s
 		Ok(v) => v,
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
-	if !stdout.contains(&serial) {
+	if !stdout.contains(&board.yk_serial_number) {
 		return Err(Box::new(YkmdError::new(&format!(
-			"board with serial {} not found", serial))))
+			"board with serial {} not found", board.yk_serial_number))))
 	}
 	
-	println!("{} attached to {}@{}", board, serial, port);
-	power(board, serial.clone(), port.clone(), "down".to_string(), command)?;
+	println!("{} attached to {}@{}", board.name, board.yk_serial_number,
+		 board.yk_port_number);
+	power(board_name, board.yk_serial_number, board.yk_port_number, "down".to_string(), command)?;
 
 	return Ok(())
 }
