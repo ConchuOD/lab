@@ -6,7 +6,6 @@
 use serde_yaml::Value;
 use std::fs;
 use std::fmt;
-//use crate::boards;
 
 #[derive(Debug)]
 pub struct ConfigParsingError {
@@ -32,6 +31,7 @@ impl std::error::Error for ConfigParsingError {
 }
 
 #[derive(Clone)]
+#[derive(Debug)]
 pub struct Board {
 	pub name: String,
 	pub yk_serial_number: String,
@@ -50,6 +50,17 @@ impl Default for Board {
 			power_source: "n/a".to_string(),
 			powered: false
 		}
+	}
+}
+
+pub trait Status {
+	fn is_powered(&self) -> bool;
+}
+
+impl Status for Board {
+	fn is_powered(&self) -> bool
+	{
+		return self.powered
 	}
 }
 
@@ -83,7 +94,7 @@ fn populate_board(mut board: &mut Board, board_config: Value)
 pub fn get_all_boards_from_config(input_file: String)
 -> Result<Vec<Board>,Box<dyn std::error::Error>>
 {
-	let boards: Vec<Board> = Vec::new();
+	let mut boards: Vec<Board> = Vec::new();
 	let contents = fs::read_to_string(input_file)?;
 
 	let config: Value = serde_yaml::from_str(&contents)?;
@@ -98,12 +109,15 @@ pub fn get_all_boards_from_config(input_file: String)
 		.iter();
 
 	for board_config in board_configs_iter {
-		let mut board = Board::default();
-		board.name = board_config.0
-			.as_str()
-			.ok_or_else(|| return ConfigParsingError::new("name was not a string"))?
-			.to_string();
+		let mut board = Board {
+			name: board_config.0
+				.as_str()
+				.ok_or_else(|| return ConfigParsingError::new("name was not a string"))?
+				.to_string(),
+			..Default::default()
+		};
 		populate_board(&mut board, board_config.1.to_owned())?;
+		boards.push(board);
 	}
 
 	return Ok(boards.clone());
@@ -122,8 +136,10 @@ pub fn get_board_from_config(board_name: String, input_file: String)
 		.get(board_name.clone())
 		.ok_or_else(|| return ConfigParsingError::new("Requested board not found"))?;
 
-	let mut board = Board::default();
-	board.name = board_name.clone();
+	let mut board = Board {
+		name: board_name,
+		..Default::default()
+	};
 	populate_board(&mut board, board_config.to_owned())?;
 
 	return Ok(board.clone());
