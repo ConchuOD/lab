@@ -3,7 +3,7 @@ boards:
   icicle:
     type: relay
     serial: "YK21614"
-    port: "5"
+    port: "r"
     uart:
       pattern: "usb-Silicon_Labs_CP2108_Quad_USB_to_UART_Bridge_Controller_4E8DF76ACA27C09811EA547FE4D974D"
       primary: "if01-port0"
