@@ -49,7 +49,7 @@ fn power(board: String, serial: String, port: String, direction: String, command
 		return Err(Box::new(YkmdError::new("failed to power direction")));
 	}
 
-	println!("{} attached to {}@{} powered {}.", board, serial, port, direction);
+	dbg!("{} attached to {}@{} powered {}.", board, serial, port, direction);
 	return Ok(())
 }
 
@@ -118,7 +118,8 @@ pub fn reboot_board(board_name: String, input_file: String)
 			"board with serial {} not found", board.yk_serial_number))))
 	}
 	
-	println!("{} attached to {}@{}", board.name, board.yk_serial_number, board.yk_port_number);
+	dbg!("{} attached to {}@{}", board.name.clone(), board.yk_serial_number.clone(),
+	     board.yk_port_number.clone());
 
 	power(board_name.clone(), board.yk_serial_number.clone(), board.yk_port_number.clone(),
 	      "down".to_string(), command.clone())?;
@@ -133,7 +134,7 @@ pub fn turn_off_board(board_name: String, input_file: String)
 {
 	let mut command: String = String::new();
 
-	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
+	let board = boards::get_board_from_config(board_name, input_file)?;
 
 	format_command(board.power_source, &mut command)?;
 
@@ -153,9 +154,9 @@ pub fn turn_off_board(board_name: String, input_file: String)
 			"board with serial {} not found", board.yk_serial_number))))
 	}
 	
-	println!("{} attached to {}@{}", board.name, board.yk_serial_number,
-		 board.yk_port_number);
-	power(board_name, board.yk_serial_number, board.yk_port_number,
+	dbg!("{} attached to {}@{}", board.name.clone(), board.yk_serial_number.clone(),
+	     board.yk_port_number.clone());
+	power(board.name, board.yk_serial_number, board.yk_port_number,
 	      "down".to_string(), command)?;
 
 	return Ok(())
@@ -166,7 +167,7 @@ pub fn turn_on_board(board_name: String, input_file: String)
 {
 	let mut command: String = String::new();
 
-	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
+	let board = boards::get_board_from_config(board_name, input_file)?;
 
 	format_command(board.power_source, &mut command)?;
 
@@ -186,9 +187,9 @@ pub fn turn_on_board(board_name: String, input_file: String)
 			"board with serial {} not found", board.yk_serial_number))))
 	}
 	
-	println!("{} attached to {}@{}", board.name, board.yk_serial_number,
-		 board.yk_port_number);
-	power(board_name, board.yk_serial_number, board.yk_port_number,
+	dbg!("{} attached to {}@{}", board.name.clone(), board.yk_serial_number.clone(),
+	     board.yk_port_number.clone());
+	power(board.name, board.yk_serial_number, board.yk_port_number,
 	      "up".to_string(), command)?;
 
 	return Ok(())
@@ -237,7 +238,7 @@ pub fn goodnight(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 	}
 	for board in board_configs.unwrap().iter() {
 		let board_name = board.0.as_str().unwrap();
-		println!("Trying to power down {}", board_name);
+		dbg!("Trying to power down {}", board_name);
 		let _ = turn_off_board(String::from(board_name), input_file.clone());
 	}
 	
