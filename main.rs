@@ -113,6 +113,19 @@ impl<'a> UIState<'a> {
 	}
 }
 
+fn toggle_power_state(board: &boards::Board, input_file: String)
+-> Result<(), Box<dyn std::error::Error>>
+{
+	if !board.is_powered()? {
+		return ykcmd::turn_on_board(board.name.to_string(),
+					    input_file.clone());
+	}
+
+	return ykcmd::turn_off_board(board.name.to_string(),
+				     input_file.clone());
+}
+
+
 fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
 	// open the config file to figure out what boards we have
@@ -198,11 +211,8 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 						if selected.is_none() {
 							continue;
 						}
-
-						let _err =
-							ykcmd::reboot_board(selected.unwrap()
-									    .name.to_string(),
-									    input_file.clone());
+						let _err = toggle_power_state(selected.unwrap(),
+									      input_file.clone());
 					}
 					_ => {}
 				}

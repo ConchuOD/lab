@@ -161,6 +161,39 @@ pub fn turn_off_board(board_name: String, input_file: String)
 	return Ok(())
 }
 
+pub fn turn_on_board(board_name: String, input_file: String)
+-> Result<(), Box<dyn std::error::Error>>
+{
+	let mut command: String = String::new();
+
+	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
+
+	format_command(board.power_source, &mut command)?;
+
+	let output = Command::new("sh")
+		.arg("-c")
+		.arg(format!("{} -l ", command))
+		.output()
+		.expect("failed to execute process");
+
+	let stdout = match String::from_utf8(output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+
+	if !stdout.contains(&board.yk_serial_number) {
+		return Err(Box::new(YkmdError::new(&format!(
+			"board with serial {} not found", board.yk_serial_number))))
+	}
+	
+	println!("{} attached to {}@{}", board.name, board.yk_serial_number,
+		 board.yk_port_number);
+	power(board_name, board.yk_serial_number, board.yk_port_number,
+	      "up".to_string(), command)?;
+
+	return Ok(())
+}
+
 pub fn is_powered(board: &boards::Board)
 -> Result<bool, Box<dyn std::error::Error>>
 {
