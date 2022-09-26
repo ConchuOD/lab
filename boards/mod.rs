@@ -4,8 +4,8 @@
 #![allow(clippy::needless_return)]
 
 use serde_yaml::Value;
-use std::fs;
-use std::fmt;
+use std::{fs, fmt};
+use crate::ykcmd;
 
 #[derive(Debug)]
 pub struct ConfigParsingError {
@@ -54,13 +54,13 @@ impl Default for Board {
 }
 
 pub trait Status {
-	fn is_powered(&self) -> bool;
+	fn is_powered(&self) -> Result<bool, Box<dyn std::error::Error>>;
 }
 
 impl Status for Board {
-	fn is_powered(&self) -> bool
+	fn is_powered(&self) -> Result<bool, Box<dyn std::error::Error>>
 	{
-		return self.powered
+		return ykcmd::is_powered(self)
 	}
 }
 

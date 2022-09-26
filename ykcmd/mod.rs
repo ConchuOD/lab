@@ -4,8 +4,7 @@
 #![allow(clippy::needless_return)]
 
 use serde_yaml::Value;
-use std::{fs,process::Command};
-use std::{fmt, thread, time};
+use std::{fs, process::Command, fmt, thread, time};
 use crate::boards;
 
 #[derive(Debug)]
@@ -54,6 +53,36 @@ fn power(board: String, serial: String, port: String, direction: String, command
 	return Ok(())
 }
 
+fn port_status(serial: String, port: String, command: String)
+-> Result<bool, Box<dyn std::error::Error>>
+{
+	let output = Command::new("sh")
+		.arg("-c")
+		.arg(
+			&format!("{} -s {} -g {}",
+				command,
+				serial,
+				port)
+		)
+		.output()
+		.expect("failed to execute process");
+
+	if !output.status.success() {
+		return Err(Box::new(YkmdError::new("failed to get port status")));
+	}
+
+	let stdout = match String::from_utf8(output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+	
+	if stdout.contains("ON") {
+		return Ok(true)
+	} else {
+		return Ok(false)
+	}
+}
+
 fn format_command(yk_board_type: String, command: &mut String)
 -> Result<(), Box<dyn std::error::Error>>
 {
@@ -66,7 +95,8 @@ fn format_command(yk_board_type: String, command: &mut String)
 	return Ok(())
 }
 
-pub fn reboot_board(board_name: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+pub fn reboot_board(board_name: String, input_file: String)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	let mut command: String = String::new();
 	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
@@ -98,7 +128,8 @@ pub fn reboot_board(board_name: String, input_file: String) -> Result<(), Box<dy
 	return Ok(())
 }
 
-pub fn turn_off_board(board_name: String, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+pub fn turn_off_board(board_name: String, input_file: String)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	let mut command: String = String::new();
 
@@ -116,6 +147,7 @@ pub fn turn_off_board(board_name: String, input_file: String) -> Result<(), Box<
 		Ok(v) => v,
 		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
 	};
+
 	if !stdout.contains(&board.yk_serial_number) {
 		return Err(Box::new(YkmdError::new(&format!(
 			"board with serial {} not found", board.yk_serial_number))))
@@ -123,9 +155,37 @@ pub fn turn_off_board(board_name: String, input_file: String) -> Result<(), Box<
 	
 	println!("{} attached to {}@{}", board.name, board.yk_serial_number,
 		 board.yk_port_number);
-	power(board_name, board.yk_serial_number, board.yk_port_number, "down".to_string(), command)?;
+	power(board_name, board.yk_serial_number, board.yk_port_number,
+	      "down".to_string(), command)?;
 
 	return Ok(())
+}
+
+pub fn is_powered(board: &boards::Board)
+-> Result<bool, Box<dyn std::error::Error>>
+{
+	let mut command: String = String::new();
+
+	format_command((*board).power_source.to_string(), &mut command)?;
+
+	let output = Command::new("sh")
+		.arg("-c")
+		.arg(format!("{} -l ", command))
+		.output()
+		.expect("failed to execute process");
+
+	let stdout = match String::from_utf8(output.stdout) {
+		Ok(v) => v,
+		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+	};
+
+	if !stdout.contains(&board.yk_serial_number) {
+		return Err(Box::new(YkmdError::new(&format!(
+			"board with serial {} not found", board.yk_serial_number))))
+	}
+
+	return port_status(board.yk_serial_number.clone(), board.yk_port_number.clone(),
+			   command);
 }
 
 pub fn goodnight(input_file: String) -> Result<(), Box<dyn std::error::Error>>

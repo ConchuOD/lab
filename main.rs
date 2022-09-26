@@ -39,6 +39,7 @@ struct Args {
 
 mod ykcmd;
 mod boards;
+use boards::Status;
 
 #[derive(Clone)]
 struct StatefulList<T> {
@@ -96,7 +97,7 @@ impl<T> StatefulList<T> {
 
 #[derive(Clone)]
 struct UIState<'a> {
-	boards: StatefulList<(&'a str, &'a bool)>
+	boards: StatefulList<&'a boards::Board>
 }
 
 impl<'a> UIState<'a> {
@@ -106,15 +107,13 @@ impl<'a> UIState<'a> {
 		}
 	}
 
-	fn selected (self) -> Result<(&'a str, &'a bool),Box<dyn std::error::Error>>
+	fn selected (self) -> Result<&'a boards::Board, Box<dyn std::error::Error>>
 	{
 		return Ok(self.boards.items[self.boards.state.selected().unwrap()])
 	}
-
-
 }
 
-fn run_interactively(input_file: String) -> Result<(),Box<dyn std::error::Error>>
+fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
 	// open the config file to figure out what boards we have
 	let boards = boards::get_all_boards_from_config(input_file.clone())?;
@@ -130,9 +129,7 @@ fn run_interactively(input_file: String) -> Result<(),Box<dyn std::error::Error>
 	terminal.clear()?;
 
 	for board in boards.iter() {
-		ui_state.boards.items.push(
-			(&*board.name, &(*board).powered)
-		);
+		ui_state.boards.items.push(&*board);
 	}
 
 	loop {
@@ -141,13 +138,15 @@ fn run_interactively(input_file: String) -> Result<(),Box<dyn std::error::Error>
 			.boards.items.iter()
 			.map(|i| {
 				let mut colour = Color::Gray;
-
-				if *i.1
+				let status = i.is_powered();
+				if status.is_ok()
 				{
-					colour = Color::Blue;
+					if status.unwrap() {
+						colour = Color::Blue;
+					}
 				}
 
-				return ListItem::new(i.0)
+				return ListItem::new(i.name.clone())
 					.style(
 						Style::default()
 							.fg(colour)
@@ -195,7 +194,8 @@ fn run_interactively(input_file: String) -> Result<(),Box<dyn std::error::Error>
 					KeyCode::Down => ui_state.boards.next(),
 					KeyCode::Up => ui_state.boards.previous(),
 					KeyCode::Enter => {
-						ykcmd::reboot_board(ui_state.clone().selected()?.0.to_string(),
+						ykcmd::reboot_board(ui_state.clone().selected()?
+								    .name.to_string(),
 								    input_file.clone())?;
 					}
 					_ => {}
