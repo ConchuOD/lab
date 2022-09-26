@@ -207,36 +207,10 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 					}
 					_ => {}
 				}
-				if false {
-				match key.code {
-					KeyCode::Char(c) => {
-						input.push(c);
-					}
-					KeyCode::Backspace => {
-						input.pop();
-					}
-					KeyCode::Esc => {
-						terminal.clear()?;
-						if disable_raw_mode().is_err() {
-							panic!("Failed to clean up terminal");
-						}
-						break;
-					}
-					KeyCode::Enter => {
-						//messages.push(input.drain(..).collect());
-					}
-					_ => {}
-				}}
 			}
 		}
-
-		//let input = handle_messages(&mut messages);
-		//if let Some(command) = input.clone() {
-		//}
-		//next_state = states::get_next_state(next_state, &mut board, input);
 	}
 
-	// allow selection of a given board w/ directional keys
 	// allow issuance of on/off/reboot/goodnight commands
 	return Ok(());
 }
