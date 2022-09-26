@@ -12,12 +12,10 @@ use std::time::Duration;
 use std::io;
 use tui::{
 	backend::CrosstermBackend,
-	Frame,
-	layout::{Constraint, Direction, Layout, Rect},
+	layout::{Constraint, Direction, Layout},
 	style::{Color, Modifier, Style},
-	text::Span, Terminal,
-	widgets::{Block, Borders, Paragraph, Cell, Row, Table, List, ListItem, ListState},
-	widgets::canvas::{Canvas, Rectangle},
+	Terminal,
+	widgets::{Block, Borders, List, ListItem, ListState},
 };
 
 /// lab
@@ -117,12 +115,10 @@ fn toggle_power_state(board: &boards::Board, input_file: String)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	if !board.is_powered()? {
-		return ykcmd::turn_on_board(board.name.to_string(),
-					    input_file.clone());
+		return ykcmd::turn_on_board(board.name.to_string(), input_file);
 	}
 
-	return ykcmd::turn_off_board(board.name.to_string(),
-				     input_file.clone());
+	return ykcmd::turn_off_board(board.name.to_string(), input_file);
 }
 
 
@@ -151,11 +147,8 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 			.map(|i| {
 				let mut colour = Color::Gray;
 				let status = i.is_powered();
-				if status.is_ok()
-				{
-					if status.unwrap() {
-						colour = Color::Blue;
-					}
+				if status.is_ok() && status.unwrap() {
+					colour = Color::Blue;
 				}
 
 				return ListItem::new(i.name.clone())
