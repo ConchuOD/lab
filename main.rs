@@ -107,9 +107,9 @@ impl<'a> UIState<'a> {
 		}
 	}
 
-	fn selected (self) -> Result<&'a boards::Board, Box<dyn std::error::Error>>
+	fn selected (self) -> Option<&'a boards::Board>
 	{
-		return Ok(self.boards.items[self.boards.state.selected().unwrap()])
+		return Some(self.boards.items[self.boards.state.selected()?])
 	}
 }
 
@@ -194,7 +194,13 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 					KeyCode::Down => ui_state.boards.next(),
 					KeyCode::Up => ui_state.boards.previous(),
 					KeyCode::Enter => {
-						ykcmd::reboot_board(ui_state.clone().selected()?
+						let selected = ui_state.clone().selected();
+
+						if selected.is_none() {
+							continue;
+						}
+
+						ykcmd::reboot_board(selected.unwrap()
 								    .name.to_string(),
 								    input_file.clone())?;
 					}
