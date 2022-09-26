@@ -200,9 +200,10 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 							continue;
 						}
 
-						ykcmd::reboot_board(selected.unwrap()
-								    .name.to_string(),
-								    input_file.clone())?;
+						let _err =
+							ykcmd::reboot_board(selected.unwrap()
+									    .name.to_string(),
+									    input_file.clone());
 					}
 					_ => {}
 				}
