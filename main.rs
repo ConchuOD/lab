@@ -122,7 +122,6 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 	let stdout = io::stdout();
 	let backend = CrosstermBackend::new(stdout);
 	let mut terminal = Terminal::new(backend)?;
-	let mut input: String = String::new();
 
 	terminal.clear()?;
 	enable_raw_mode()?;
