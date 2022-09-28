@@ -12,3 +12,11 @@ boards:
     type: usb
     serial: "YK24012"
     port: "1"
+  unmatched:
+    type: relay
+    serial: "n/a"
+    port: "n/a"
+    uart:
+      pattern: "usb-FTDI_Dual_RS232-HS"
+      primary: "if01-port0"
+
