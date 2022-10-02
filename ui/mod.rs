@@ -125,7 +125,7 @@ fn toggle_power_state(board: &boards::Board)
 	return board.power_off()
 }
 
-fn create_centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+fn create_centered_rect(percent_x: u16, percent_y: u16, rect: Rect) -> Rect {
 	let popup_layout = Layout::default()
 		.direction(Direction::Vertical)
 		.constraints(
@@ -136,7 +136,7 @@ fn create_centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 			]
 			.as_ref(),
 		)
-		.split(r);
+		.split(rect);
 
 	return Layout::default()
 		.direction(Direction::Horizontal)
