@@ -64,6 +64,29 @@ impl Status for Board {
 	}
 }
 
+pub trait Ops {
+	fn power_off(&self) -> Result<(), Box<dyn std::error::Error>>;
+	fn power_on(&self) -> Result<(), Box<dyn std::error::Error>>;
+}
+
+impl Ops for Board {
+	fn power_off(&self) -> Result<(), Box<dyn std::error::Error>>
+	{
+		return ykcmd::power_off(self.name.clone(),
+					self.yk_serial_number.clone(),
+					self.yk_port_number.clone(),
+					self.power_source.clone());
+	}
+
+	fn power_on(&self) -> Result<(), Box<dyn std::error::Error>>
+	{
+		return ykcmd::power_on(self.name.clone(),
+				       self.yk_serial_number.clone(),
+				       self.yk_port_number.clone(),
+				       self.power_source.clone());
+	}
+}
+
 fn populate_board(mut board: &mut Board, board_config: Value)
 -> Result<(),Box<dyn std::error::Error>>
 {

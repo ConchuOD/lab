@@ -17,9 +17,8 @@ use tui::{
 	widgets::{Block, Borders, List, ListItem, ListState},
 };
 
-use crate::ykcmd;
 use crate::boards;
-use crate::boards::Status;
+use crate::boards::{Ops, Status};
 
 #[derive(Clone)]
 struct StatefulList<T> {
@@ -82,7 +81,7 @@ impl<T> StatefulList<T> {
 	}
 }
 
-type Action = fn(&boards::Board, String) -> Result<(), Box<dyn std::error::Error>>;
+type Action = fn(&boards::Board) -> Result<(), Box<dyn std::error::Error>>;
 
 #[derive(Clone)]
 struct UIState<'a> {
@@ -116,14 +115,14 @@ impl<'a> UIState<'a> {
 	}
 }
 
-fn toggle_power_state(board: &boards::Board, input_file: String)
+fn toggle_power_state(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	if !board.is_powered()? {
-		return ykcmd::turn_on_board(board.name.to_string(), input_file);
+		return board.power_on()
 	}
 
-	return ykcmd::turn_off_board(board.name.to_string(), input_file);
+	return board.power_off()
 }
 
 fn create_centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -187,7 +186,7 @@ fn action_menu(ui_state: &mut UIState)
 	ui_state.show_popup = true;
 }
 
-fn perform_action(ui_state: UIState, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+fn perform_action(ui_state: UIState) -> Result<(), Box<dyn std::error::Error>>
 {
 	let board = ui_state.clone().selected_board();
 
@@ -198,9 +197,9 @@ fn perform_action(ui_state: UIState, input_file: String) -> Result<(), Box<dyn s
 	let action = ui_state.clone().selected_action();
 
 	if action.is_none() {
-		toggle_power_state(board.unwrap(), input_file)?;
+		toggle_power_state(board.unwrap())?;
 	} else {
-		action.unwrap()(board.unwrap(), input_file)?;
+		action.unwrap()(board.unwrap())?;
 	}
 
 	return Ok(());
@@ -208,7 +207,7 @@ fn perform_action(ui_state: UIState, input_file: String) -> Result<(), Box<dyn s
 
 pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
-	let boards = boards::get_all_boards_from_config(input_file.clone())?;
+	let boards = boards::get_all_boards_from_config(input_file)?;
 	let mut ui_state = UIState::new();
 	let stdout = io::stdout();
 	let backend = CrosstermBackend::new(stdout);
@@ -294,8 +293,7 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 					KeyCode::Down => ui_state.actions.next(),
 					KeyCode::Up => ui_state.actions.previous(),
 					KeyCode::Enter => {
-						let _err = perform_action(ui_state.clone(),
-									  input_file.clone());
+						let _err = perform_action(ui_state.clone());
 					},
 					_ => {}
 				}
