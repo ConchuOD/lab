@@ -115,14 +115,29 @@ impl<'a> UIState<'a> {
 	}
 }
 
-fn toggle_power_state(board: &boards::Board)
--> Result<(), Box<dyn std::error::Error>>
+fn power_on(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+{
+	return board.power_on()
+}
+
+
+fn power_off(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+{
+	return board.power_off()
+}
+
+fn toggle_power_state(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 {
 	if !board.is_powered()? {
 		return board.power_on()
 	}
 
 	return board.power_off()
+}
+
+fn reboot(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+{
+	return board.reboot()
 }
 
 fn create_centered_rect(percent_x: u16, percent_y: u16, rect: Rect) -> Rect {
@@ -161,7 +176,9 @@ fn action_menu(ui_state: &mut UIState)
 
 	ui_state.actions = StatefulList::with_items(vec![
 			("Switch power", toggle_power_state),
-			("Reboot", toggle_power_state),
+			("Reboot", reboot),
+			("Power off", power_off),
+			("Power on", power_on),
 			("Boot test", toggle_power_state),
 		]);
 
