@@ -1,6 +1,3 @@
 - extra arg to connect to the boards uart after restarting
   - this has to be interactive, able to use the console
-- handle new commands interactively, eg reboot from inside program?
-- internal menu to switch between the different boards
-  - issue commands etc without leaving the window
-- must retain the basic interface though for use in my build system
+  - "boot test" option should implement expect & pipe output to RHS ui
