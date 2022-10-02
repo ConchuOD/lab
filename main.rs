@@ -124,10 +124,8 @@ fn toggle_power_state(board: &boards::Board, input_file: String)
 
 fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
-	// open the config file to figure out what boards we have
 	let boards = boards::get_all_boards_from_config(input_file.clone())?;
 	let mut ui_state = UIState::new();
-	// set up the ui in a terminal
 	let stdout = io::stdout();
 	let backend = CrosstermBackend::new(stdout);
 	let mut terminal = Terminal::new(backend)?;
@@ -213,7 +211,6 @@ fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error
 		}
 	}
 
-	// allow issuance of on/off/reboot/goodnight commands
 	return Ok(());
 }
 
