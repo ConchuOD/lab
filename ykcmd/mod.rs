@@ -95,40 +95,6 @@ fn format_command(yk_board_type: String, command: &mut String)
 	return Ok(())
 }
 
-pub fn reboot_board(board_name: String, input_file: String)
--> Result<(), Box<dyn std::error::Error>>
-{
-	let mut command: String = String::new();
-	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
-
-	format_command(board.power_source, &mut command)?;
-
-	let output = Command::new("sh")
-		.arg("-c")
-		.arg(format!("{} -l ", command))
-		.output()
-		.expect("failed to execute process");
-
-	let stdout = match String::from_utf8(output.stdout) {
-		Ok(v) => v,
-		Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-	};
-	if !stdout.contains(&board.yk_serial_number) {
-		return Err(Box::new(YkmdError::new(&format!(
-			"board with serial {} not found", board.yk_serial_number))))
-	}
-	
-	dbg!("{} attached to {}@{}", board.name.clone(), board.yk_serial_number.clone(),
-	     board.yk_port_number.clone());
-
-	power(board_name.clone(), board.yk_serial_number.clone(), board.yk_port_number.clone(),
-	      "down".to_string(), command.clone())?;
-	thread::sleep(time::Duration::from_millis(1000));
-	power(board_name, board.yk_serial_number, board.yk_port_number, "up".to_string(), command)?;
-
-	return Ok(())
-}
-
 pub fn power_off_board(board_name: String, input_file: String)
 -> Result<(), Box<dyn std::error::Error>>
 {
@@ -205,6 +171,27 @@ pub fn power_on_board(board_name: String, input_file: String)
 			board.power_source)
 }
 
+pub fn reboot_board(board_name: String, input_file: String)
+-> Result<(), Box<dyn std::error::Error>>
+{
+	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
+
+	return reboot(board.name, board.yk_serial_number, board.yk_port_number,
+		      board.power_source)
+}
+
+pub fn reboot(board_name: String, serial_number: String, port_number: String, power_source: String)
+-> Result<(), Box<dyn std::error::Error>>
+{
+
+	power_off(board_name.clone(), serial_number.clone(), port_number.clone(),
+		  power_source.clone())?;
+	thread::sleep(time::Duration::from_millis(1000));
+	power_on(board_name.clone(), serial_number.clone(), port_number.clone(),
+		 power_source.clone())?;
+
+	return Ok(())
+}
 
 pub fn is_powered(board: &boards::Board)
 -> Result<bool, Box<dyn std::error::Error>>

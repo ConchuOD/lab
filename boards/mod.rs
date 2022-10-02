@@ -67,6 +67,7 @@ impl Status for Board {
 pub trait Ops {
 	fn power_off(&self) -> Result<(), Box<dyn std::error::Error>>;
 	fn power_on(&self) -> Result<(), Box<dyn std::error::Error>>;
+	fn reboot(&self) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 impl Ops for Board {
@@ -84,6 +85,14 @@ impl Ops for Board {
 				       self.yk_serial_number.clone(),
 				       self.yk_port_number.clone(),
 				       self.power_source.clone());
+	}
+
+	fn reboot(&self) -> Result<(), Box<dyn std::error::Error>>
+	{
+		return ykcmd::reboot(self.name.clone(),
+				     self.yk_serial_number.clone(),
+				     self.yk_port_number.clone(),
+				     self.power_source.clone());
 	}
 }
 
