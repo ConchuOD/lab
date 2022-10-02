@@ -82,11 +82,15 @@ impl<T> StatefulList<T> {
 	}
 }
 
+type Action = fn(&boards::Board, String) -> Result<(), Box<dyn std::error::Error>>;
+
 #[derive(Clone)]
 struct UIState<'a> {
 	boards: StatefulList<&'a boards::Board>,
 	show_popup: bool,
-	actions: StatefulList<&'a str>,
+	actions: StatefulList<
+		(&'a str, Action)
+	>,
 	action_items: List<'a>,
 }
 
@@ -100,9 +104,15 @@ impl<'a> UIState<'a> {
 		}
 	}
 
-	fn selected (self) -> Option<&'a boards::Board>
+	fn selected_board(self) -> Option<&'a boards::Board>
 	{
 		return Some(self.boards.items[self.boards.state.selected()?])
+	}
+
+	fn selected_action(self) -> Option<Action>
+	{
+		let selected_action = self.actions.state.selected()?;
+		return Some(self.actions.items[selected_action].1);
 	}
 }
 
@@ -144,21 +154,21 @@ fn create_centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 
 fn action_menu(ui_state: &mut UIState)
 {
-	let selected = ui_state.clone().selected();
+	let selected_board = ui_state.clone().selected_board();
 
-	if selected.is_none() {
+	if selected_board.is_none() {
 		return;
 	}
 
 	ui_state.actions = StatefulList::with_items(vec![
-			"Switch power",
-			"Reboot",
-			"Boot test",
+			("Switch power", toggle_power_state),
+			("Reboot", toggle_power_state),
+			("Boot test", toggle_power_state),
 		]);
 
 	let action_items: Vec<ListItem> = ui_state.actions.items.iter()
 		.map(|i| {
-			return ListItem::new(<&str>::clone(i))
+			return ListItem::new(i.0)
 				.style(
 					Style::default().fg(Color::Red)
 				)
@@ -177,6 +187,24 @@ fn action_menu(ui_state: &mut UIState)
 	ui_state.show_popup = true;
 }
 
+fn perform_action(ui_state: UIState, input_file: String) -> Result<(), Box<dyn std::error::Error>>
+{
+	let board = ui_state.clone().selected_board();
+
+	if board.is_none() {
+		return Ok(())
+	}
+
+	let action = ui_state.clone().selected_action();
+
+	if action.is_none() {
+		toggle_power_state(board.unwrap(), input_file)?;
+	} else {
+		action.unwrap()(board.unwrap(), input_file)?;
+	}
+
+	return Ok(());
+}
 
 pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 {
@@ -266,17 +294,11 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 					KeyCode::Down => ui_state.actions.next(),
 					KeyCode::Up => ui_state.actions.previous(),
 					KeyCode::Enter => {
-						let selected = ui_state.clone().selected();
-
-						if selected.is_none() {
-							continue;
-						}
-						let _err = toggle_power_state(selected.unwrap(),
-									      input_file.clone());
+						let _err = perform_action(ui_state.clone(),
+									  input_file.clone());
 					},
 					_ => {}
 				}
-			
 			}
 		}
 
