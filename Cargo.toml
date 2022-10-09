@@ -11,6 +11,8 @@ serde = "1.0"
 serde_yaml = "0.8"
 tui = { version = "0.17", features = ["termion"] }
 crossterm = "0.23"
+rexpect = "0.4"
+serialport = "4.2.0"
 
 [[bin]]
 name = "lab"

@@ -4,6 +4,7 @@
 #![allow(clippy::needless_return)]
 
 use serde_yaml::Value;
+use serialport;
 use std::{fs, fmt};
 use crate::ykcmd;
 
@@ -38,6 +39,7 @@ pub struct Board {
 	pub yk_port_number: String,
 	pub power_source: String,
 	pub powered: bool,
+	pub primary_uart: String,
 }
 
 impl Default for Board {
@@ -48,7 +50,8 @@ impl Default for Board {
 			yk_serial_number: "n/a".to_string(),
 			yk_port_number: "n/a".to_string(),
 			power_source: "n/a".to_string(),
-			powered: false
+			powered: false,
+			primary_uart: "n/a".to_string(),
 		}
 	}
 }
@@ -68,6 +71,8 @@ pub trait Ops {
 	fn power_off(&self) -> Result<(), Box<dyn std::error::Error>>;
 	fn power_on(&self) -> Result<(), Box<dyn std::error::Error>>;
 	fn reboot(&self) -> Result<(), Box<dyn std::error::Error>>;
+	fn expect_boot(&self) -> Result<(), Box<dyn std::error::Error>>;
+	fn expect_shutdown(&self) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 impl Ops for Board {
@@ -94,9 +99,55 @@ impl Ops for Board {
 				     self.yk_port_number.clone(),
 				     self.power_source.clone());
 	}
+
+	fn expect_boot(&self) -> Result<(), Box<dyn std::error::Error>>
+	{
+		let uart = &self.primary_uart;
+		let port = serialport::new(uart, 115_200).open()?;
+		let read_port = port.try_clone()?;
+		let write_port = port.try_clone()?;
+
+		let mut stream = rexpect::session::spawn_stream(read_port, write_port, Some(120000));
+
+		dbg!("expecting on uart with path {}", self.primary_uart.clone());
+		stream.exp_regex(".*U-Boot.*")?;
+		dbg!("Found U-Boot!}");
+		stream.exp_regex(".*Linux version.*")?;
+		dbg!("Found Linux!}");
+		stream.exp_regex(".*init.*")?;
+		dbg!("Found init!}");
+		stream.exp_regex(".*login: .*")?;
+		stream.send_line("root")?;
+		stream.exp_regex(".*assword: ")?;
+		dbg!("Waiting for password!");
+		stream.send_line("fedora_rocks!")?;
+		stream.exp_regex(".*#.*")?;
+		dbg!("Logged in!");
+
+		return Ok(())
+	}
+
+	fn expect_shutdown(&self) -> Result<(), Box<dyn std::error::Error>>
+	{
+		let uart = &self.primary_uart;
+		let port = serialport::new(uart, 115_200).open()?;
+		let read_port = port.try_clone()?;
+		let write_port = port.try_clone()?;
+
+		let mut stream = rexpect::session::spawn_stream(read_port, write_port, Some(120000));
+
+		dbg!("expecting on uart with path {}", self.primary_uart.clone());
+		stream.send_line("poweroff")?;
+		dbg!("Powering off!");
+		stream.exp_regex(".*reboot: System halted.*")?;
+		dbg!("Shut down!");
+
+		return Ok(())
+	}
+
 }
 
-fn populate_board(mut board: &mut Board, board_config: Value)
+fn populate_board(board: &mut Board, board_config: Value)
 -> Result<(),Box<dyn std::error::Error>>
 {
 	board.yk_serial_number = board_config
@@ -119,6 +170,42 @@ fn populate_board(mut board: &mut Board, board_config: Value)
 		.as_str()
 		.ok_or_else(|| return ConfigParsingError::new("Type was not a string"))?
 		.to_owned();
+
+	let _who_cares = populate_uart(board, board_config);
+
+	return Ok(());
+}
+
+fn populate_uart(board: &mut Board, board_config: Value)
+-> Result<(),Box<dyn std::error::Error>>
+{
+	board.yk_serial_number = board_config
+		.get("serial")
+		.ok_or_else(|| return ConfigParsingError::new("No serial number found"))?
+		.as_str()
+		.ok_or_else(|| return ConfigParsingError::new("Serial number was not a string"))?
+		.to_owned();
+	
+	let uart_config = board_config
+		.get("uart")
+		.ok_or_else(|| return ConfigParsingError::new("No uart config found"))?;
+
+	let uart_by_id = uart_config
+		.get("pattern")
+		.ok_or_else(|| return ConfigParsingError::new("No uart pattern found"))?
+		.as_str()
+		.ok_or_else(|| return ConfigParsingError::new("uart pattern was not a string"))?
+		.to_owned();
+
+	let uart_primary = uart_config
+		.get("primary")
+		.ok_or_else(|| return ConfigParsingError::new("No uart primary found"))?
+		.as_str()
+		.ok_or_else(|| return ConfigParsingError::new("uart primary was not a string"))?
+		.to_owned();
+	
+	board.primary_uart = format!("/dev/serial/by-id/{}-{}", uart_by_id, uart_primary);
+	dbg!("uart found with path {}", board.primary_uart.clone());
 
 	return Ok(());
 }
