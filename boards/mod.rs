@@ -4,7 +4,6 @@
 #![allow(clippy::needless_return)]
 
 use serde_yaml::Value;
-use serialport;
 use std::{fs, fmt};
 use crate::ykcmd;
 

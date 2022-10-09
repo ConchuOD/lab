@@ -174,7 +174,7 @@ pub fn power_on_board(board_name: String, input_file: String)
 pub fn reboot_board(board_name: String, input_file: String)
 -> Result<(), Box<dyn std::error::Error>>
 {
-	let board = boards::get_board_from_config(board_name.clone(), input_file)?;
+	let board = boards::get_board_from_config(board_name, input_file)?;
 
 	return reboot(board.name, board.yk_serial_number, board.yk_port_number,
 		      board.power_source)
@@ -187,8 +187,8 @@ pub fn reboot(board_name: String, serial_number: String, port_number: String, po
 	power_off(board_name.clone(), serial_number.clone(), port_number.clone(),
 		  power_source.clone())?;
 	thread::sleep(time::Duration::from_millis(1000));
-	power_on(board_name.clone(), serial_number.clone(), port_number.clone(),
-		 power_source.clone())?;
+	power_on(board_name, serial_number, port_number,
+		 power_source)?;
 
 	return Ok(())
 }

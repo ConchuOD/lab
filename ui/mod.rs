@@ -120,7 +120,6 @@ fn power_on(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 	return board.power_on()
 }
 
-
 fn power_off(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 {
 	return board.power_off()
