@@ -140,6 +140,14 @@ fn reboot(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 	return board.reboot()
 }
 
+fn boot_test(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+{
+	board.reboot()?;
+	board.expect_boot()?;
+	board.expect_shutdown()?;
+	return board.power_off()
+}
+
 fn create_centered_rect(percent_x: u16, percent_y: u16, rect: Rect) -> Rect {
 	let popup_layout = Layout::default()
 		.direction(Direction::Vertical)
@@ -179,7 +187,7 @@ fn action_menu(ui_state: &mut UIState)
 			("Reboot", reboot),
 			("Power off", power_off),
 			("Power on", power_on),
-			("Boot test", toggle_power_state),
+			("Boot test", boot_test),
 		]);
 
 	let action_items: Vec<ListItem> = ui_state.actions.items.iter()
