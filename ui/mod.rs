@@ -14,7 +14,8 @@ use tui::{
 	layout::{Constraint, Direction, Layout, Rect},
 	style::{Color, Modifier, Style},
 	Terminal,
-	widgets::{Block, Borders, List, ListItem, ListState},
+	text::{Span, Spans},
+	widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
 
 use crate::boards;
@@ -81,7 +82,7 @@ impl<T> StatefulList<T> {
 	}
 }
 
-type Action = fn(&boards::Board) -> Result<(), Box<dyn std::error::Error>>;
+type Action = fn(&boards::Board, &mut Paragraph) -> Result<(), Box<dyn std::error::Error>>;
 
 #[derive(Clone)]
 struct UIState<'a> {
@@ -91,6 +92,7 @@ struct UIState<'a> {
 		(&'a str, Action)
 	>,
 	action_items: List<'a>,
+	text_box: Paragraph<'a>,
 }
 
 impl<'a> UIState<'a> {
@@ -100,6 +102,7 @@ impl<'a> UIState<'a> {
 			show_popup: false,
 			actions: StatefulList::default(),
 			action_items: List::new(Vec::new()),
+			text_box: Paragraph::new(""),
 		}
 	}
 
@@ -116,31 +119,41 @@ impl<'a> UIState<'a> {
 }
 
 pub trait ShowConsole {
-	fn show_console(&self, console_log: &Vec<String>);
+	fn show_console(&self, console_log: &Vec<String>, text_box: &mut Paragraph);
 }
 
 impl ShowConsole for boards::Board {
-	fn show_console(&self, console_log: &Vec<String>)
+	fn show_console(&self, console_log: &Vec<String>, text_box: &mut Paragraph)
 	{
 		let lines = console_log.clone();
 
+		let mut text = Vec::new();
+
 		for line in lines.iter() {
-			println!("{}", line);
+			text.push(Spans::from(vec![Span::raw(line.clone()), Span::raw("\n")]));
 		}
+
+		*text_box = Paragraph::new(text)
+		    .block(Block::default().title("Paragraph").borders(Borders::ALL))
+		    .style(Style::default().fg(Color::White).bg(Color::Black))
+		    .wrap(tui::widgets::Wrap { trim: true });
 	}
 }
 
-fn power_on(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+fn power_on(board: &boards::Board, _log: &mut Paragraph)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	return board.power_on()
 }
 
-fn power_off(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+fn power_off(board: &boards::Board, _log: &mut Paragraph)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	return board.power_off()
 }
 
-fn toggle_power_state(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+fn toggle_power_state(board: &boards::Board, _log: &mut Paragraph)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	if !board.is_powered()? {
 		return board.power_on()
@@ -149,18 +162,21 @@ fn toggle_power_state(board: &boards::Board) -> Result<(), Box<dyn std::error::E
 	return board.power_off()
 }
 
-fn reboot(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+fn reboot(board: &boards::Board, _log: &mut Paragraph)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	return board.reboot()
 }
 
-fn boot_test(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
+fn boot_test(board: &boards::Board, log: &mut Paragraph)
+-> Result<(), Box<dyn std::error::Error>>
 {
 	let mut output = Vec::new();
 	board.reboot()?;
 	board.expect_boot(&mut output)?;
+	board.show_console(&output, log);
 	board.expect_shutdown(&mut output)?;
-	board.show_console(&output);
+	board.show_console(&output, log);
 	return board.power_off()
 }
 
@@ -227,7 +243,7 @@ fn action_menu(ui_state: &mut UIState)
 	ui_state.show_popup = true;
 }
 
-fn perform_action(ui_state: UIState) -> Result<(), Box<dyn std::error::Error>>
+fn perform_action(ui_state: &mut UIState) -> Result<(), Box<dyn std::error::Error>>
 {
 	let board = ui_state.clone().selected_board();
 
@@ -238,9 +254,9 @@ fn perform_action(ui_state: UIState) -> Result<(), Box<dyn std::error::Error>>
 	let action = ui_state.clone().selected_action();
 
 	if action.is_none() {
-		toggle_power_state(board.unwrap())?;
+		toggle_power_state(board.unwrap(), &mut ui_state.text_box)?;
 	} else {
-		action.unwrap()(board.unwrap())?;
+		action.unwrap()(board.unwrap(), &mut ui_state.text_box)?;
 	}
 
 	return Ok(());
@@ -334,7 +350,7 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 					KeyCode::Down => ui_state.actions.next(),
 					KeyCode::Up => ui_state.actions.previous(),
 					KeyCode::Enter => {
-						let _err = perform_action(ui_state.clone());
+						let _err = perform_action(&mut ui_state);
 					},
 					_ => {}
 				}
@@ -343,7 +359,8 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 
 		terminal.draw(|frame| {
 			useable_window = entire_window.split(frame.size());
-
+			
+			frame.render_widget(ui_state.text_box.clone(), useable_window[1]);
 			frame.render_stateful_widget(items.clone(), useable_window[0],
 						     &mut ui_state.boards.state);
 			if ui_state.show_popup {
