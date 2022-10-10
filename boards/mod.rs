@@ -111,7 +111,7 @@ impl Ops for Board {
 		dbg!("expecting on uart with path {}", self.primary_uart.clone());
 
 		let (output, _) = stream.exp_regex(".*U-Boot.*")?;
-		console_log.push(output.clone());
+		console_log.push(output);
 		dbg!("Found U-Boot!}");
 
 		let (output, _) = stream.exp_regex(".*Linux version.*")?;
