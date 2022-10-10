@@ -70,8 +70,8 @@ pub trait Ops {
 	fn power_off(&self) -> Result<(), Box<dyn std::error::Error>>;
 	fn power_on(&self) -> Result<(), Box<dyn std::error::Error>>;
 	fn reboot(&self) -> Result<(), Box<dyn std::error::Error>>;
-	fn expect_boot(&self) -> Result<(), Box<dyn std::error::Error>>;
-	fn expect_shutdown(&self) -> Result<(), Box<dyn std::error::Error>>;
+	fn expect_boot(&self, console_log: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
+	fn expect_shutdown(&self, console_log: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 impl Ops for Board {
@@ -99,7 +99,7 @@ impl Ops for Board {
 				     self.power_source.clone());
 	}
 
-	fn expect_boot(&self) -> Result<(), Box<dyn std::error::Error>>
+	fn expect_boot(&self, console_log: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>>
 	{
 		let uart = &self.primary_uart;
 		let port = serialport::new(uart, 115_200).open()?;
@@ -109,24 +109,36 @@ impl Ops for Board {
 		let mut stream = rexpect::session::spawn_stream(read_port, write_port, Some(120000));
 
 		dbg!("expecting on uart with path {}", self.primary_uart.clone());
-		stream.exp_regex(".*U-Boot.*")?;
+
+		let (output, _) = stream.exp_regex(".*U-Boot.*")?;
+		console_log.push(output.clone());
 		dbg!("Found U-Boot!}");
-		stream.exp_regex(".*Linux version.*")?;
+
+		let (output, _) = stream.exp_regex(".*Linux version.*")?;
+		console_log.push(output);
 		dbg!("Found Linux!}");
-		stream.exp_regex(".*init.*")?;
+
+		let (output, _) = stream.exp_regex(".*init.*")?;
+		console_log.push(output);
 		dbg!("Found init!}");
-		stream.exp_regex(".*login: .*")?;
+
+		let (output, _) = stream.exp_regex(".*login: .*")?;
+		console_log.push(output);
 		stream.send_line("root")?;
-		stream.exp_regex(".*assword: ")?;
+
+		let (output, _) = stream.exp_regex(".*assword: ")?;
+		console_log.push(output);
 		dbg!("Waiting for password!");
+
 		stream.send_line("fedora_rocks!")?;
-		stream.exp_regex(".*#.*")?;
+		let (output, _) = stream.exp_regex(".*#.*")?;
+		console_log.push(output);
 		dbg!("Logged in!");
 
 		return Ok(())
 	}
 
-	fn expect_shutdown(&self) -> Result<(), Box<dyn std::error::Error>>
+	fn expect_shutdown(&self, console_log: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>>
 	{
 		let uart = &self.primary_uart;
 		let port = serialport::new(uart, 115_200).open()?;
@@ -138,7 +150,8 @@ impl Ops for Board {
 		dbg!("expecting on uart with path {}", self.primary_uart.clone());
 		stream.send_line("poweroff")?;
 		dbg!("Powering off!");
-		stream.exp_regex(".*reboot: System halted.*")?;
+		let (output, _) = stream.exp_regex(".*reboot: System halted.*")?;
+		console_log.push(output);
 		dbg!("Shut down!");
 
 		return Ok(())

@@ -115,6 +115,21 @@ impl<'a> UIState<'a> {
 	}
 }
 
+pub trait ShowConsole {
+	fn show_console(&self, console_log: &Vec<String>);
+}
+
+impl ShowConsole for boards::Board {
+	fn show_console(&self, console_log: &Vec<String>)
+	{
+		let lines = console_log.clone();
+
+		for line in lines.iter() {
+			println!("{}", line);
+		}
+	}
+}
+
 fn power_on(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 {
 	return board.power_on()
@@ -141,9 +156,11 @@ fn reboot(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 
 fn boot_test(board: &boards::Board) -> Result<(), Box<dyn std::error::Error>>
 {
+	let mut output = Vec::new();
 	board.reboot()?;
-	board.expect_boot()?;
-	board.expect_shutdown()?;
+	board.expect_boot(&mut output)?;
+	board.expect_shutdown(&mut output)?;
+	board.show_console(&output);
 	return board.power_off()
 }
 
