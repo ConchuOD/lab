@@ -149,8 +149,16 @@ fn boot_test(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	let mut output = Vec::new();
+
 	board.reboot()?;
-	board.expect_boot(&mut output)?;
+	let ret = board.expect_boot(&mut output);
+
+	if ret.is_err() {
+		dbg!("Expect boot failed, likely the uart is in use!");
+		board.power_off()?;
+		return ret;
+	}
+
 	board.expect_shutdown(&mut output)?;
 	return board.power_off()
 }
