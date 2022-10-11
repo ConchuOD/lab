@@ -30,6 +30,10 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	let args = Args::parse();
 	let input_file = args.config;
 	let board = args.board;
+	stderrlog::new()
+		.module(module_path!())
+		.init()
+		.unwrap();
 
 	match args.function.as_str() {
 		"off" => return ykcmd::power_off_board(board, input_file),

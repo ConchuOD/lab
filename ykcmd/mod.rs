@@ -6,6 +6,7 @@
 use serde_yaml::Value;
 use std::{fs, process::Command, fmt, thread, time};
 use crate::boards;
+use log::debug;
 
 #[derive(Debug)]
 pub struct YkmdError {
@@ -49,7 +50,7 @@ fn power(board: String, serial: String, port: String, direction: String, command
 		return Err(Box::new(YkmdError::new("failed to power direction")));
 	}
 
-	dbg!("{} attached to {}@{} powered {}.", board, serial, port, direction);
+	debug!("{} attached to {}@{} powered {}.", board, serial, port, direction);
 	return Ok(())
 }
 
@@ -126,8 +127,7 @@ pub fn power_off(board_name: String, serial_number: String, port_number: String,
 			"board with serial {} not found", serial_number))))
 	}
 	
-	dbg!("{} attached to {}@{}", board_name.clone(), serial_number.clone(),
-	     port_number.clone());
+	debug!("{} attached to {}@{}", board_name, serial_number, port_number);
 	power(board_name, serial_number, port_number, "down".to_string(), command)?;
 
 	return Ok(())
@@ -156,8 +156,7 @@ pub fn power_on(board_name: String, serial_number: String, port_number: String, 
 			"board with serial {} not found", serial_number))))
 	}
 	
-	dbg!("{} attached to {}@{}", board_name.clone(), serial_number.clone(),
-	     port_number.clone());
+	debug!("{} attached to {}@{}", board_name, serial_number, port_number);
 	power(board_name, serial_number, port_number, "up".to_string(), command)?;
 
 	return Ok(())
@@ -236,7 +235,7 @@ pub fn goodnight(input_file: String) -> Result<(), Box<dyn std::error::Error>>
 	}
 	for board in board_configs.unwrap().iter() {
 		let board_name = board.0.as_str().unwrap();
-		dbg!("Trying to power down {}", board_name);
+		debug!("Trying to power down {}", board_name);
 		let _ = power_off_board(String::from(board_name), input_file.clone());
 	}
 	

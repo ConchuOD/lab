@@ -16,6 +16,7 @@ use tui::{
 	Terminal,
 	widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
+use log::error;
 
 use crate::boards;
 use crate::boards::{Ops, Status};
@@ -154,7 +155,7 @@ fn boot_test(board: &boards::Board)
 	let ret = board.expect_boot(&mut output);
 
 	if ret.is_err() {
-		dbg!("Expect boot failed, likely the uart is in use!");
+		error!("Expect boot failed, likely the uart is in use!");
 		board.power_off()?;
 		return ret;
 	}

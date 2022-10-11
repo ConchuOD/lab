@@ -6,6 +6,7 @@
 use serde_yaml::Value;
 use std::{fs, fmt};
 use crate::ykcmd;
+use log::debug;
 
 #[derive(Debug)]
 pub struct ConfigParsingError {
@@ -108,19 +109,19 @@ impl Ops for Board {
 
 		let mut stream = rexpect::session::spawn_stream(read_port, write_port, Some(120000));
 
-		dbg!("expecting on uart with path {}", self.primary_uart.clone());
+		debug!("expecting on uart with path {}", self.primary_uart.clone());
 
 		let (output, _) = stream.exp_regex(".*U-Boot.*")?;
 		console_log.push(output);
-		dbg!("Found U-Boot!}");
+		debug!("Found U-Boot!");
 
 		let (output, _) = stream.exp_regex(".*Linux version.*")?;
 		console_log.push(output);
-		dbg!("Found Linux!}");
+		debug!("Found Linux!");
 
 		let (output, _) = stream.exp_regex(".*init.*")?;
 		console_log.push(output);
-		dbg!("Found init!}");
+		debug!("Found init!");
 
 		let (output, _) = stream.exp_regex(".*login: .*")?;
 		console_log.push(output);
@@ -128,12 +129,12 @@ impl Ops for Board {
 
 		let (output, _) = stream.exp_regex(".*assword: ")?;
 		console_log.push(output);
-		dbg!("Waiting for password!");
+		debug!("Waiting for password!");
 
 		stream.send_line("fedora_rocks!")?;
 		let (output, _) = stream.exp_regex(".*#.*")?;
 		console_log.push(output);
-		dbg!("Logged in!");
+		debug!("Logged in!");
 
 		return Ok(())
 	}
@@ -147,12 +148,12 @@ impl Ops for Board {
 
 		let mut stream = rexpect::session::spawn_stream(read_port, write_port, Some(120000));
 
-		dbg!("expecting on uart with path {}", self.primary_uart.clone());
+		debug!("expecting on uart with path {}", self.primary_uart.clone());
 		stream.send_line("poweroff")?;
-		dbg!("Powering off!");
+		debug!("Powering off!");
 		let (output, _) = stream.exp_regex(".*reboot: System halted.*")?;
 		console_log.push(output);
-		dbg!("Shut down!");
+		debug!("Shut down!");
 
 		return Ok(())
 	}
@@ -217,7 +218,7 @@ fn populate_uart(board: &mut Board, board_config: Value)
 		.to_owned();
 	
 	board.primary_uart = format!("/dev/serial/by-id/{}-{}", uart_by_id, uart_primary);
-	dbg!("uart found with path {}", board.primary_uart.clone());
+	debug!("uart found with path {}", board.primary_uart.clone());
 
 	return Ok(());
 }
