@@ -14,7 +14,6 @@ use tui::{
 	layout::{Constraint, Direction, Layout, Rect},
 	style::{Color, Modifier, Style},
 	Terminal,
-	text::{Span, Spans},
 	widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
 
@@ -82,7 +81,7 @@ impl<T> StatefulList<T> {
 	}
 }
 
-type Action = fn(&boards::Board, &mut Paragraph) -> Result<(), Box<dyn std::error::Error>>;
+type Action = fn(&boards::Board) -> Result<(), Box<dyn std::error::Error>>;
 
 #[derive(Clone)]
 struct UIState<'a> {
@@ -118,41 +117,19 @@ impl<'a> UIState<'a> {
 	}
 }
 
-pub trait ShowConsole {
-	fn show_console(&self, console_log: &Vec<String>, text_box: &mut Paragraph);
-}
-
-impl ShowConsole for boards::Board {
-	fn show_console(&self, console_log: &Vec<String>, text_box: &mut Paragraph)
-	{
-		let lines = console_log.clone();
-
-		let mut text = Vec::new();
-
-		for line in lines.iter() {
-			text.push(Spans::from(vec![Span::raw(line.clone()), Span::raw("\n")]));
-		}
-
-		*text_box = Paragraph::new(text)
-		    .block(Block::default().title("Paragraph").borders(Borders::ALL))
-		    .style(Style::default().fg(Color::White).bg(Color::Black))
-		    .wrap(tui::widgets::Wrap { trim: true });
-	}
-}
-
-fn power_on(board: &boards::Board, _log: &mut Paragraph)
+fn power_on(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	return board.power_on()
 }
 
-fn power_off(board: &boards::Board, _log: &mut Paragraph)
+fn power_off(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	return board.power_off()
 }
 
-fn toggle_power_state(board: &boards::Board, _log: &mut Paragraph)
+fn toggle_power_state(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	if !board.is_powered()? {
@@ -162,21 +139,19 @@ fn toggle_power_state(board: &boards::Board, _log: &mut Paragraph)
 	return board.power_off()
 }
 
-fn reboot(board: &boards::Board, _log: &mut Paragraph)
+fn reboot(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	return board.reboot()
 }
 
-fn boot_test(board: &boards::Board, log: &mut Paragraph)
+fn boot_test(board: &boards::Board)
 -> Result<(), Box<dyn std::error::Error>>
 {
 	let mut output = Vec::new();
 	board.reboot()?;
 	board.expect_boot(&mut output)?;
-	board.show_console(&output, log);
 	board.expect_shutdown(&mut output)?;
-	board.show_console(&output, log);
 	return board.power_off()
 }
 
@@ -254,9 +229,9 @@ fn perform_action(ui_state: &mut UIState) -> Result<(), Box<dyn std::error::Erro
 	let action = ui_state.clone().selected_action();
 
 	if action.is_none() {
-		toggle_power_state(board.unwrap(), &mut ui_state.text_box)?;
+		toggle_power_state(board.unwrap())?;
 	} else {
-		action.unwrap()(board.unwrap(), &mut ui_state.text_box)?;
+		action.unwrap()(board.unwrap())?;
 	}
 
 	return Ok(());
@@ -279,7 +254,7 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 	}
 
 	loop {
-	
+
 		let items: Vec<ListItem> = ui_state
 			.boards.items.iter()
 			.map(|i| {
@@ -295,7 +270,7 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 					)
 			})
 			.collect();
-	
+
 		let items = List::new(items)
 			.block(Block::default().borders(Borders::ALL).title("List"))
 			.highlight_style(
@@ -359,7 +334,7 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 
 		terminal.draw(|frame| {
 			useable_window = entire_window.split(frame.size());
-			
+
 			frame.render_widget(ui_state.text_box.clone(), useable_window[1]);
 			frame.render_stateful_widget(items.clone(), useable_window[0],
 						     &mut ui_state.boards.state);
