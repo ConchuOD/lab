@@ -1,1 +1,19 @@
 yk*cmd wrapper for my board "farm"
+
+I can either use it in scripts w/ args like on or off or run it as a wee TUI to
+control the boards "manually". I am lazy, so it is done for now. Maybe when I
+get my whole "farm" set back up properly I will change my mind on that one.
+
+```
+lab 1.0.0
+
+USAGE:
+    lab [OPTIONS]
+
+OPTIONS:
+    -b, --board <BOARD>          board to operate on [default: icicle]
+    -c, --config <CONFIG>        input yaml config file [default: config.yaml]
+    -f, --function <FUNCTION>    command (reboot, off, goodnight) [default: interactive]
+    -h, --help                   Print help information
+    -V, --version                Print version information
+```
