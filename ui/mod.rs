@@ -333,6 +333,7 @@ pub fn run_interactively(input_file: String) -> Result<(), Box<dyn std::error::E
 					KeyCode::Left => ui_state.actions.deselect(),
 					KeyCode::Down => ui_state.actions.next(),
 					KeyCode::Up => ui_state.actions.previous(),
+					KeyCode::Esc => ui_state.show_popup = false,
 					KeyCode::Enter => {
 						let _err = perform_action(&mut ui_state);
 					},
