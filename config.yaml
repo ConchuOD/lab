@@ -12,6 +12,14 @@ boards:
     type: usb
     serial: "YK24012"
     port: "1"
+  nezha:
+    type: usb
+    serial: "YK24012"
+    port: "3"
+  vauban:
+    type: usb
+    serial: "YK24346"
+    port: "3"
   unmatched:
     type: relay
     serial: "n/a"
