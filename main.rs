@@ -17,7 +17,7 @@ struct Args {
 	#[clap(short, long, default_value = "icicle")]
 	board: String,
 	
-	/// command (reboot, off, goodnight)
+	/// command (reset, off, goodnight)
 	#[clap(short, long, default_value = "interactive")]
 	function: String,
 }
@@ -38,7 +38,7 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
 	match args.function.as_str() {
 		"off" => return ykcmd::power_off_board(board, input_file),
 		"on" => return ykcmd::power_on_board(board, input_file),
-		"reboot" => return ykcmd::reboot_board(board, input_file),
+		"reset" => return ykcmd::reboot_board(board, input_file),
 		"goodnight" => return ykcmd::goodnight(input_file),
 		"interactive" => return ui::run_interactively(input_file),
 		_ => return Err(Box::new(ykcmd::YkmdError::new("Invalid function"))),
