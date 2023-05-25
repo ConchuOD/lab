@@ -12,6 +12,10 @@ boards:
     type: usb
     serial: "YK24012"
     port: "1"
+  vision5v2:
+    type: usb
+    serial: "YK24012"
+    port: "2"
   nezha:
     type: usb
     serial: "YK24012"
